@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TutorFlow - Tuition & Schedule Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sand: {
+                            50: '#fcfbf9',
+                            100: '#f7f4ef',
+                            200: '#efe8dc',
+                            300: '#e2d5c3',
+                            500: '#b89d7a',
+                            800: '#534433',
+                            900: '#2c231a',
+                        },
+                        sage: {
+                            50: '#f4f7f4',
+                            100: '#e5ece5',
+                            500: '#739072',
+                            600: '#4f6f52',
+                            700: '#3a533b',
+                        },
+                        terracotta: {
+                            100: '#fbece8',
+                            500: '#d97757',
+                            600: '#c05638',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Mobile Utility Styling */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f7f4ef;
+            color: #2c231a;
+        }
+        /* Custom scrollbar hiding for smooth mobile tab bar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .modal-animate {
+            animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-sand-100 text-sand-900 pb-24 md:pb-6 min-h-screen">
+
+    <!-- TOP HEADER -->
+    <header class="sticky top-0 z-30 bg-sand-50/90 backdrop-blur-md border-b border-sand-200 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 rounded-xl bg-sage-600 flex items-center justify-center text-white shadow-sm">
+                <i data-lucide="book-open-check" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold leading-none text-sand-900">TutorFlow</h1>
+                <p class="text-xs text-sand-500 font-medium mt-0.5">Tuition & Schedule Manager</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="loadSampleData()" title="Load Sample Data" class="px-2.5 py-1.5 bg-sand-200 hover:bg-sand-300 text-sand-800 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1">
+                <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Demo Data</span>
+            </button>
+            <button onclick="openStudentModal()" class="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-95">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Student</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main id="app-container" class="max-w-md mx-auto px-4 py-4 md:max-w-3xl">
+
+        <!-- TAB 1: SCHEDULE & ATTENDANCE -->
+        <section id="tab-schedule" class="tab-content space-y-4">
+            <!-- Date / Month Selector -->
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-sand-200 flex items-center justify-between">
+                <button onclick="changeScheduleMonth(-1)" class="p-2 hover:bg-sand-100 rounded-xl transition"><i data-lucide="chevron-left" class="w-5 h-5 text-sand-800"></i></button>
+                <div class="text-center">
+                    <span id="current-schedule-month-label" class="text-base font-bold text-sand-900 block">March 2026</span>
+                    <span id="current-schedule-count" class="text-xs text-sand-500 font-medium">0 classes scheduled</span>
+                </div>
+                <button onclick="changeScheduleMonth(1)" class="p-2 hover:bg-sand-100 rounded-xl transition"><i data-lucide="chevron-right" class="w-5 h-5 text-sand-800"></i></button>
+            </div>
+
+            <!-- Add Single Class Button -->
+            <div class="flex justify-between items-center">
+                <h2 class="text-sm font-bold text-sand-800 uppercase tracking-wider">Lessons List</h2>
+                <button onclick="openAddLessonModal()" class="text-xs font-semibold text-sage-600 hover:text-sage-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-sand-200 shadow-2xs">
+                    <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i> Add Extra Class
+                </button>
+            </div>
+
+            <!-- Lessons List -->
+            <div id="schedule-list" class="space-y-3">
+                <!-- Dynamically Rendered Lessons -->
+            </div>
+        </section>
+
+        <!-- TAB 2: STUDENTS DIRECTORY -->
+        <section id="tab-students" class="tab-content hidden space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-base font-bold text-sand-900">Active Students</h2>
+                <span id="student-count-badge" class="text-xs bg-sand-200 text-sand-800 font-bold px-2 py-0.5 rounded-full">0 Students</span>
+            </div>
+            <div id="students-list" class="space-y-3">
+                <!-- Dynamically Rendered Students -->
+            </div>
+        </section>
+
+        <!-- TAB 3: MONTHLY INVOICE & TIMETABLE -->
+        <section id="tab-invoices" class="tab-content hidden space-y-4">
+            <!-- Generator Bar -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200 space-y-3">
+                <h2 class="text-sm font-bold text-sand-900 flex items-center gap-1.5">
+                    <i data-lucide="file-text" class="w-4 h-4 text-sage-600"></i>
+                    1st of Month Fee Generator
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-sand-500 mb-1">Select Month</label>
+                        <input type="month" id="invoice-month-picker" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-semibold text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-sand-500 mb-1">Select Student</label>
+                        <select id="invoice-student-picker" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-semibold text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                            <!-- Options rendered dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <button onclick="generateInvoice()" class="w-full py-2.5 bg-sage-600 hover:bg-sage-700 text-white font-semibold text-xs rounded-xl shadow-sm transition active:scale-98 flex items-center justify-center gap-1.5">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Statement & Timetable
+                </button>
+            </div>
+
+            <!-- Preview & Copy Area -->
+            <div id="invoice-result-container" class="hidden space-y-4">
+                <!-- Dynamically Populated Invoice Card -->
+            </div>
+        </section>
+
+        <!-- TAB 4: FINANCIAL DASHBOARD -->
+        <section id="tab-finance" class="tab-content hidden space-y-4">
+            <!-- Month Selector for Dashboard -->
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-sand-200 flex items-center justify-between">
+                <span class="text-xs font-bold text-sand-500 uppercase tracking-wider">Financial Month</span>
+                <input type="month" id="finance-month-picker" onchange="renderFinanceTab()" class="bg-sand-50 border border-sand-200 rounded-xl px-3 py-1.5 text-xs font-bold text-sand-900 focus:outline-none">
+            </div>
+
+            <!-- Revenue Cards Grid -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200">
+                    <div class="flex items-center gap-1.5 text-sage-600 mb-1">
+                        <i data-lucide="coins" class="w-4 h-4"></i>
+                        <span class="text-xs font-semibold">Actual Earned</span>
+                    </div>
+                    <div id="finance-actual-earned" class="text-2xl font-black text-sand-900">$0</div>
+                    <p class="text-[10px] text-sand-500 mt-1">Completed + Late cancels</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200">
+                    <div class="flex items-center gap-1.5 text-sand-600 mb-1">
+                        <i data-lucide="receipt" class="w-4 h-4"></i>
+                        <span class="text-xs font-semibold">Total Billed</span>
+                    </div>
+                    <div id="finance-total-billed" class="text-2xl font-black text-sand-900">$0</div>
+                    <p class="text-[10px] text-sand-500 mt-1">Expected 1st-of-month</p>
+                </div>
+            </div>
+
+            <!-- Hours Taught Card -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold text-sand-500 block">Lessons Taught / Conducted</span>
+                    <span id="finance-lessons-count" class="text-lg font-bold text-sand-900">0 sessions</span>
+                </div>
+                <div class="w-10 h-10 bg-sand-100 rounded-xl flex items-center justify-center text-sand-800">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <!-- Payment Collection Status Breakdown -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200 space-y-3">
+                <h3 class="text-xs font-bold text-sand-800 uppercase tracking-wider">Payment Collection Status</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="flex items-center gap-1.5 font-medium text-emerald-700">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Collected (Paid)
+                        </span>
+                        <span id="finance-collected-amount" class="font-bold text-sand-900">$0</span>
+                    </div>
+                    <div class="w-full bg-sand-100 h-2 rounded-full overflow-hidden">
+                        <div id="finance-collected-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs pt-2">
+                        <span class="flex items-center gap-1.5 font-medium text-amber-700">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> Outstanding (Unpaid)
+                        </span>
+                        <span id="finance-outstanding-amount" class="font-bold text-sand-900">$0</span>
+                    </div>
+                    <div class="w-full bg-sand-100 h-2 rounded-full overflow-hidden">
+                        <div id="finance-outstanding-bar" class="bg-amber-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-sand-200 max-w-md mx-auto md:max-w-3xl">
+        <div class="grid grid-cols-4 h-16">
+            <button onclick="switchTab('schedule')" id="nav-schedule" class="nav-btn flex flex-col items-center justify-center text-sage-600 font-semibold">
+                <i data-lucide="calendar" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px]">Schedule</span>
+            </button>
+            <button onclick="switchTab('students')" id="nav-students" class="nav-btn flex flex-col items-center justify-center text-sand-400 hover:text-sand-700 font-medium">
+                <i data-lucide="users" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px]">Students</span>
+            </button>
+            <button onclick="switchTab('invoices')" id="nav-invoices" class="nav-btn flex flex-col items-center justify-center text-sand-400 hover:text-sand-700 font-medium">
+                <i data-lucide="receipt" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px]">Billing</span>
+            </button>
+            <button onclick="switchTab('finance')" id="nav-finance" class="nav-btn flex flex-col items-center justify-center text-sand-400 hover:text-sand-700 font-medium">
+                <i data-lucide="line-chart" class="w-5 h-5 mb-1"></i>
+                <span class="text-[10px]">Dashboard</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODAL: ADD / EDIT STUDENT -->
+    <div id="modal-student" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs hidden flex items-end justify-center md:items-center">
+        <div class="bg-white w-full max-w-md rounded-t-3xl md:rounded-2xl p-5 modal-animate space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-sand-100 pb-3">
+                <h3 id="modal-student-title" class="text-base font-bold text-sand-900">Add New Student</h3>
+                <button onclick="closeModal('modal-student')" class="p-1 hover:bg-sand-100 rounded-lg text-sand-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="student-form" onsubmit="saveStudent(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="student-id">
+                <div>
+                    <label class="block font-semibold text-sand-700 mb-1">Student Name *</label>
+                    <input type="text" id="student-name" required placeholder="e.g. Alex Wong" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-sand-700 mb-1">Fee Rate Per Lesson ($) *</label>
+                    <input type="number" id="student-rate" required placeholder="e.g. 500" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-sand-700 mb-1">Regular Day</label>
+                        <select id="student-day" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                            <option value="0">Sunday</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sand-700 mb-1">Regular Time</label>
+                        <input type="time" id="student-time" value="16:00" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-sand-700 mb-1">Contact / Notes</label>
+                    <input type="text" id="student-notes" placeholder="e.g. Parent WhatsApp +852 9123 4567" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeModal('modal-student')" class="w-1/2 py-2.5 bg-sand-100 hover:bg-sand-200 font-bold text-sand-700 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-sage-600 hover:bg-sage-700 font-bold text-white rounded-xl shadow-sm transition">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD EXTRA / AD-HOC LESSON -->
+    <div id="modal-lesson" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs hidden flex items-end justify-center md:items-center">
+        <div class="bg-white w-full max-w-md rounded-t-3xl md:rounded-2xl p-5 modal-animate space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-sand-100 pb-3">
+                <h3 class="text-base font-bold text-sand-900">Add Extra Class</h3>
+                <button onclick="closeModal('modal-lesson')" class="p-1 hover:bg-sand-100 rounded-lg text-sand-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="lesson-form" onsubmit="saveExtraLesson(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-sand-700 mb-1">Student *</label>
+                    <select id="lesson-student-id" required class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                        <!-- Options loaded dynamically -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-sand-700 mb-1">Date *</label>
+                        <input type="date" id="lesson-date" required class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sand-700 mb-1">Time *</label>
+                        <input type="time" id="lesson-time" value="16:00" required class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-sand-700 mb-1">Lesson Type</label>
+                    <select id="lesson-type" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                        <option value="adhoc">Ad-hoc Extra Class (Billed)</option>
+                        <option value="makeup">Make-up Class (Uses 1 Credit)</option>
+                    </select>
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeModal('modal-lesson')" class="w-1/2 py-2.5 bg-sand-100 hover:bg-sand-200 font-bold text-sand-700 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-sage-600 hover:bg-sage-700 font-bold text-white rounded-xl shadow-sm transition">Schedule Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: RESCHEDULE CLASS -->
+    <div id="modal-reschedule" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs hidden flex items-end justify-center md:items-center">
+        <div class="bg-white w-full max-w-md rounded-t-3xl md:rounded-2xl p-5 modal-animate space-y-4">
+            <div class="flex items-center justify-between border-b border-sand-100 pb-3">
+                <h3 class="text-base font-bold text-sand-900">Reschedule Lesson</h3>
+                <button onclick="closeModal('modal-reschedule')" class="p-1 hover:bg-sand-100 rounded-lg text-sand-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="reschedule-form" onsubmit="saveReschedule(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="reschedule-lesson-id">
+                <div class="p-3 bg-sand-50 rounded-xl border border-sand-200 text-sand-700 font-medium" id="reschedule-lesson-info">
+                    <!-- Lesson Info Populated Here -->
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-sand-700 mb-1">New Date *</label>
+                        <input type="date" id="reschedule-date" required class="w-full bg-white border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-sand-700 mb-1">New Time *</label>
+                        <input type="time" id="reschedule-time" required class="w-full bg-white border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                    </div>
+                </div>
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeModal('modal-reschedule')" class="w-1/2 py-2.5 bg-sand-100 hover:bg-sand-200 font-bold text-sand-700 rounded-xl transition">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-sage-600 hover:bg-sage-700 font-bold text-white rounded-xl shadow-sm transition">Confirm New Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-sand-900 text-white px-4 py-2.5 rounded-2xl shadow-lg text-xs font-semibold flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300">
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toast-msg">Action completed</span>
+    </div>
+
+    <!-- APPLICATION LOGIC -->
+    <script>
+        // GLOBAL DATA STORES
+        let students = [];
+        let lessons = [];
+        let invoices = [];
+        let currentScheduleMonth = new Date();
+
+        // APP INITIALIZATION
+        window.onload = function() {
+            lucide.createIcons();
+            loadStateFromLocalStorage();
+            
+            // Set default invoice month input to current month
+            const today = new Date();
+            const ym = today.toISOString().slice(0, 7);
+            document.getElementById('invoice-month-picker').value = ym;
+            document.getElementById('finance-month-picker').value = ym;
+
+            // Generate initial monthly regular classes if empty
+            ensureRegularLessonsGenerated();
+
+            renderScheduleTab();
+            renderStudentsTab();
+            populateStudentPickers();
+        };
+
+        // LOCAL STORAGE MANAGEMENT
+        function saveStateToLocalStorage() {
+            localStorage.setItem('tf_students', JSON.stringify(students));
+            localStorage.setItem('tf_lessons', JSON.stringify(lessons));
+            localStorage.setItem('tf_invoices', JSON.stringify(invoices));
+        }
+
+        function loadStateFromLocalStorage() {
+            const s = localStorage.getItem('tf_students');
+            const l = localStorage.getItem('tf_lessons');
+            const i = localStorage.getItem('tf_invoices');
+
+            if (s) students = JSON.parse(s);
+            if (l) lessons = JSON.parse(l);
+            if (i) invoices = JSON.parse(i);
+        }
+
+        // LOAD DEMO DATA
+        function loadSampleData() {
+            const today = new Date();
+            const curY = today.getFullYear();
+            const curM = today.getMonth(); // 0-indexed
+
+            students = [
+                { id: 's1', name: 'Sophia Chen', rate: 500, day: 1, time: '16:00', notes: 'WhatsApp: +852 9876 5432 (FPS/PayMe)' },
+                { id: 's2', name: 'Ethan Wong', rate: 600, day: 3, time: '17:30', notes: 'Grade 8 Piano' },
+                { id: 's3', name: 'Chloe Ho', rate: 450, day: 5, time: '15:00', notes: 'Primary Math' }
+            ];
+
+            // Helper to generate ISO date strings
+            const formatDate = (y, m, d) => {
+                const mm = String(m + 1).padStart(2, '0');
+                const dd = String(d).padStart(2, '0');
+                return `${y}-${mm}-${dd}`;
+            };
+
+            lessons = [
+                // Past & Current Month Sample Lessons
+                { id: 'l1', studentId: 's1', date: formatDate(curY, curM, 2), time: '16:00', status: 'completed', isRegular: true },
+                { id: 'l2', studentId: 's1', date: formatDate(curY, curM, 9), time: '16:00', status: 'cancelled_credited', statusReason: '>24h Notice Sick Leave', isRegular: true },
+                { id: 'l3', studentId: 's1', date: formatDate(curY, curM, 16), time: '16:00', status: 'completed', isRegular: true },
+                { id: 'l4', studentId: 's1', date: formatDate(curY, curM, 23), time: '16:00', status: 'scheduled', isRegular: true },
+
+                { id: 'l5', studentId: 's2', date: formatDate(curY, curM, 4), time: '17:30', status: 'completed', isRegular: true },
+                { id: 'l6', studentId: 's2', date: formatDate(curY, curM, 11), time: '17:30', status: 'cancelled_charged', statusReason: '<24h Late Cancel', isRegular: true },
+                { id: 'l7', studentId: 's2', date: formatDate(curY, curM, 18), time: '17:30', status: 'scheduled', isRegular: true },
+
+                { id: 'l8', studentId: 's3', date: formatDate(curY, curM, 6), time: '15:00', status: 'teacher_cancelled', statusReason: 'Teacher Sick Leave', isRegular: true },
+                { id: 'l9', studentId: 's3', date: formatDate(curY, curM, 13), time: '15:00', status: 'completed', isRegular: true }
+            ];
+
+            invoices = [
+                {
+                    id: 'inv_s1_' + curY + '_' + (curM + 1),
+                    studentId: 's1',
+                    month: `${curY}-${String(curM + 1).padStart(2, '0')}`,
+                    status: 'paid',
+                    amount: 1500,
+                    generatedAt: new Date().toISOString()
+                }
+            ];
+
+            saveStateToLocalStorage();
+            ensureRegularLessonsGenerated();
+            renderScheduleTab();
+            renderStudentsTab();
+            populateStudentPickers();
+            showToast('Sample Demo Data Loaded');
+        }
+
+        // REGULAR CLASS GENERATOR ENGINE
+        // Scans student default schedules and populates dates for current view month if missing
+        function ensureRegularLessonsGenerated() {
+            if (students.length === 0) return;
+
+            const year = currentScheduleMonth.getFullYear();
+            const month = currentScheduleMonth.getMonth(); // 0-indexed
+
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            students.forEach(student => {
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateObj = new Date(year, month, d);
+                    if (dateObj.getDay() === parseInt(student.day)) {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        
+                        // Check if a regular class already exists for this student on this date
+                        const exists = lessons.some(l => l.studentId === student.id && l.date === dateStr);
+                        if (!exists) {
+                            lessons.push({
+                                id: 'reg_' + student.id + '_' + dateStr,
+                                studentId: student.id,
+                                date: dateStr,
+                                time: student.time,
+                                status: 'scheduled',
+                                isRegular: true
+                            });
+                        }
+                    }
+                }
+            });
+
+            saveStateToLocalStorage();
+        }
+
+        // UI TAB NAVIGATION
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-sage-600', 'font-semibold');
+                btn.classList.add('text-sand-400', 'font-medium');
+            });
+
+            const activeNav = document.getElementById(`nav-${tabName}`);
+            activeNav.classList.remove('text-sand-400', 'font-medium');
+            activeNav.classList.add('text-sage-600', 'font-semibold');
+
+            if (tabName === 'schedule') renderScheduleTab();
+            if (tabName === 'students') renderStudentsTab();
+            if (tabName === 'invoices') populateStudentPickers();
+            if (tabName === 'finance') renderFinanceTab();
+        }
+
+        // RENDER: SCHEDULE TAB
+        function changeScheduleMonth(delta) {
+            currentScheduleMonth.setMonth(currentScheduleMonth.getMonth() + delta);
+            ensureRegularLessonsGenerated();
+            renderScheduleTab();
+        }
+
+        function renderScheduleTab() {
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const year = currentScheduleMonth.getFullYear();
+            const month = currentScheduleMonth.getMonth();
+
+            document.getElementById('current-schedule-month-label').innerText = `${monthNames[month]} ${year}`;
+
+            const yearMonthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const monthLessons = lessons
+                .filter(l => l.date.startsWith(yearMonthPrefix))
+                .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+            document.getElementById('current-schedule-count').innerText = `${monthLessons.length} classes scheduled`;
+
+            const container = document.getElementById('schedule-list');
+            container.innerHTML = '';
+
+            if (monthLessons.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-sand-200">
+                        <i data-lucide="calendar-x" class="w-8 h-8 text-sand-400 mx-auto mb-2"></i>
+                        <p class="text-xs font-semibold text-sand-600">No lessons scheduled for this month.</p>
+                        <p class="text-[10px] text-sand-400 mt-1">Add a student or extra class to get started.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            monthLessons.forEach(lesson => {
+                const student = students.find(s => s.id === lesson.studentId) || { name: 'Unknown Student', rate: 0 };
+                const dateObj = new Date(lesson.date + 'T' + lesson.time);
+                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                // Status Badge Styling
+                let badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                let badgeLabel = "Scheduled";
+
+                if (lesson.status === 'completed') {
+                    badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                    badgeLabel = "Completed";
+                } else if (lesson.status === 'cancelled_credited') {
+                    badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                    badgeLabel = "Cancelled (>24h Credited)";
+                } else if (lesson.status === 'cancelled_charged') {
+                    badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
+                    badgeLabel = "Cancelled (<24h Charged)";
+                } else if (lesson.status === 'teacher_cancelled') {
+                    badgeClass = "bg-purple-50 text-purple-700 border-purple-200";
+                    badgeLabel = "Teacher Cancelled (Credited)";
+                } else if (lesson.status === 'rescheduled') {
+                    badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
+                    badgeLabel = "Rescheduled";
+                } else if (lesson.status === 'makeup') {
+                    badgeClass = "bg-teal-50 text-teal-700 border-teal-200";
+                    badgeLabel = "Make-up ($0 Credit)";
+                }
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-3.5 rounded-2xl shadow-2xs border border-sand-200 space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-sm font-bold text-sand-900">${student.name}</span>
+                                ${lesson.isRegular ? '' : '<span class="text-[9px] bg-sand-200 text-sand-700 font-bold px-1.5 py-0.5 rounded">Extra</span>'}
+                            </div>
+                            <p class="text-xs font-semibold text-sand-500 mt-0.5">${dayName}, ${formattedDate} @ ${lesson.time} • $${student.rate}</p>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">
+                            ${badgeLabel}
+                        </span>
+                    </div>
+
+                    <!-- Attendance Action Controls -->
+                    <div class="pt-2 border-t border-sand-100 flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+                        <button onclick="updateLessonStatus('${lesson.id}', 'completed')" title="Mark Completed" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                            <i data-lucide="check" class="w-3 h-3"></i> Taught
+                        </button>
+                        
+                        <button onclick="openRescheduleModal('${lesson.id}')" title="Reschedule Date" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                            <i data-lucide="calendar" class="w-3 h-3"></i> Reschedule
+                        </button>
+
+                        <button onclick="updateLessonStatus('${lesson.id}', 'cancelled_credited')" title=">24h Notice (Credited)" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                            <i data-lucide="minus-circle" class="w-3 h-3"></i> >24h Cancel
+                        </button>
+
+                        <button onclick="updateLessonStatus('${lesson.id}', 'cancelled_charged')" title="<24h Notice (Charged)" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                            <i data-lucide="dollar-sign" class="w-3 h-3"></i> <24h Cancel
+                        </button>
+
+                        <button onclick="updateLessonStatus('${lesson.id}', 'teacher_cancelled')" title="Teacher Cancelled" class="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1">
+                            <i data-lucide="user-x" class="w-3 h-3"></i> Teacher Cancel
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function updateLessonStatus(lessonId, newStatus) {
+            const lesson = lessons.find(l => l.id === lessonId);
+            if (!lesson) return;
+
+            lesson.status = newStatus;
+            saveStateToLocalStorage();
+            renderScheduleTab();
+            showToast(`Status updated to ${newStatus.replace('_', ' ')}`);
+        }
+
+        // RESCHEDULE LOGIC
+        function openRescheduleModal(lessonId) {
+            const lesson = lessons.find(l => l.id === lessonId);
+            if (!lesson) return;
+
+            const student = students.find(s => s.id === lesson.studentId);
+
+            document.getElementById('reschedule-lesson-id').value = lesson.id;
+            document.getElementById('reschedule-lesson-info').innerText = `${student ? student.name : 'Student'} - Current: ${lesson.date} at ${lesson.time}`;
+            document.getElementById('reschedule-date').value = lesson.date;
+            document.getElementById('reschedule-time').value = lesson.time;
+
+            document.getElementById('modal-reschedule').classList.remove('hidden');
+        }
+
+        function saveReschedule(e) {
+            e.preventDefault();
+            const lessonId = document.getElementById('reschedule-lesson-id').value;
+            const newDate = document.getElementById('reschedule-date').value;
+            const newTime = document.getElementById('reschedule-time').value;
+
+            const lesson = lessons.find(l => l.id === lessonId);
+            if (lesson) {
+                lesson.date = newDate;
+                lesson.time = newTime;
+                lesson.status = 'rescheduled';
+                saveStateToLocalStorage();
+                renderScheduleTab();
+                closeModal('modal-reschedule');
+                showToast('Lesson rescheduled successfully');
+            }
+        }
+
+        // RENDER: STUDENTS TAB
+        function renderStudentsTab() {
+            const container = document.getElementById('students-list');
+            document.getElementById('student-count-badge').innerText = `${students.length} Students`;
+            container.innerHTML = '';
+
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-sand-200">
+                        <i data-lucide="users" class="w-8 h-8 text-sand-400 mx-auto mb-2"></i>
+                        <p class="text-xs font-semibold text-sand-600">No students registered yet.</p>
+                        <button onclick="openStudentModal()" class="mt-3 px-3 py-1.5 bg-sage-600 text-white text-xs font-bold rounded-xl">Add Student</button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+            students.forEach(student => {
+                // Compute accumulated un-billed credits for this student
+                const studentCredits = calculateStudentCredits(student.id);
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl shadow-2xs border border-sand-200 space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-sand-900">${student.name}</h3>
+                            <p class="text-xs text-sand-500 mt-0.5">Regular: Every ${dayNames[student.day]} @ ${student.time}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-black text-sand-900">$${student.rate}</span>
+                            <span class="text-[10px] text-sand-400 block">/ lesson</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-sand-50 p-2.5 rounded-xl border border-sand-200 flex items-center justify-between text-xs">
+                        <span class="text-sand-600 font-medium">Accumulated Unused Credit:</span>
+                        <span class="font-bold ${studentCredits > 0 ? 'text-emerald-700' : 'text-sand-700'}">${studentCredits} Class Credit(s) (-$${studentCredits * student.rate})</span>
+                    </div>
+
+                    ${student.notes ? `<p class="text-xs text-sand-500 italic bg-sand-50/50 p-2 rounded-lg border border-sand-100">${student.notes}</p>` : ''}
+
+                    <div class="pt-1 flex items-center justify-end gap-2">
+                        <button onclick="editStudent('${student.id}')" class="px-2.5 py-1 bg-sand-100 hover:bg-sand-200 text-sand-800 text-xs font-semibold rounded-lg transition flex items-center gap-1">
+                            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Edit
+                        </button>
+                        <button onclick="deleteStudent('${student.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg transition flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // CALCULATE CREDIT DEDUCTIONS FOR A STUDENT
+        function calculateStudentCredits(studentId) {
+            // Unused credited cancellations (cancelled_credited or teacher_cancelled) that haven't been offset
+            const creditedLessons = lessons.filter(l => 
+                l.studentId === studentId && 
+                (l.status === 'cancelled_credited' || l.status === 'teacher_cancelled')
+            ).length;
+
+            const makeupLessons = lessons.filter(l => 
+                l.studentId === studentId && l.status === 'makeup'
+            ).length;
+
+            return Math.max(0, creditedLessons - makeupLessons);
+        }
+
+        // STUDENT MODAL & CRUD
+        function openStudentModal(studentId = null) {
+            document.getElementById('student-form').reset();
+            document.getElementById('student-id').value = '';
+            document.getElementById('modal-student-title').innerText = 'Add New Student';
+
+            if (studentId) {
+                const s = students.find(x => x.id === studentId);
+                if (s) {
+                    document.getElementById('student-id').value = s.id;
+                    document.getElementById('student-name').value = s.name;
+                    document.getElementById('student-rate').value = s.rate;
+                    document.getElementById('student-day').value = s.day;
+                    document.getElementById('student-time').value = s.time;
+                    document.getElementById('student-notes').value = s.notes || '';
+                    document.getElementById('modal-student-title').innerText = 'Edit Student';
+                }
+            }
+
+            document.getElementById('modal-student').classList.remove('hidden');
+        }
+
+        function saveStudent(e) {
+            e.preventDefault();
+            const id = document.getElementById('student-id').value || 's_' + Date.now();
+            const name = document.getElementById('student-name').value.trim();
+            const rate = parseFloat(document.getElementById('student-rate').value);
+            const day = parseInt(document.getElementById('student-day').value);
+            const time = document.getElementById('student-time').value;
+            const notes = document.getElementById('student-notes').value.trim();
+
+            const existingIdx = students.findIndex(s => s.id === id);
+            if (existingIdx >= 0) {
+                students[existingIdx] = { id, name, rate, day, time, notes };
+            } else {
+                students.push({ id, name, rate, day, time, notes });
+            }
+
+            saveStateToLocalStorage();
+            ensureRegularLessonsGenerated();
+            renderStudentsTab();
+            populateStudentPickers();
+            closeModal('modal-student');
+            showToast('Student details saved');
+        }
+
+        function editStudent(id) {
+            openStudentModal(id);
+        }
+
+        function deleteStudent(id) {
+            if (confirm("Are you sure you want to delete this student? All regular schedule entries will remain as history.")) {
+                students = students.filter(s => s.id !== id);
+                saveStateToLocalStorage();
+                renderStudentsTab();
+                populateStudentPickers();
+                showToast('Student removed');
+            }
+        }
+
+        // EXTRA / AD-HOC LESSON MODAL
+        function openAddLessonModal() {
+            populateStudentPickers();
+            document.getElementById('modal-lesson').classList.remove('hidden');
+        }
+
+        function saveExtraLesson(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('lesson-student-id').value;
+            const date = document.getElementById('lesson-date').value;
+            const time = document.getElementById('lesson-time').value;
+            const type = document.getElementById('lesson-type').value;
+
+            lessons.push({
+                id: 'adhoc_' + Date.now(),
+                studentId,
+                date,
+                time,
+                status: type === 'makeup' ? 'makeup' : 'scheduled',
+                isRegular: false
+            });
+
+            saveStateToLocalStorage();
+            renderScheduleTab();
+            closeModal('modal-lesson');
+            showToast(type === 'makeup' ? 'Make-up class scheduled ($0 extra)' : 'Ad-hoc class added');
+        }
+
+        function populateStudentPickers() {
+            const pickers = [
+                document.getElementById('invoice-student-picker'),
+                document.getElementById('lesson-student-id')
+            ];
+
+            pickers.forEach(picker => {
+                if (!picker) return;
+                picker.innerHTML = '';
+                students.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.innerText = `${s.name} ($${s.rate}/class)`;
+                    picker.appendChild(opt);
+                });
+            });
+        }
+
+        // GENERATE MONTHLY INVOICE & TIMETABLE (1ST OF THE MONTH)
+        function generateInvoice() {
+            const yearMonth = document.getElementById('invoice-month-picker').value;
+            const studentId = document.getElementById('invoice-student-picker').value;
+
+            if (!yearMonth || !studentId) {
+                alert("Please select both a month and a student.");
+                return;
+            }
+
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            // 1. Get all scheduled regular & adhoc classes in target month
+            const upcomingLessons = lessons.filter(l => 
+                l.studentId === studentId && 
+                l.date.startsWith(yearMonth) &&
+                l.status !== 'cancelled_credited' && 
+                l.status !== 'teacher_cancelled'
+            ).sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+            // 2. Count regular billable sessions in target month
+            const baseClassCount = upcomingLessons.filter(l => l.status !== 'makeup').length;
+            const baseTuition = baseClassCount * student.rate;
+
+            // 3. Find credits earned from PRIOR month cancellations
+            const targetDateObj = new Date(yearMonth + '-01');
+            const prevMonthDate = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth() - 1, 1);
+            const prevYearMonth = prevMonthDate.toISOString().slice(0, 7);
+
+            const prevMonthCreditedLessons = lessons.filter(l => 
+                l.studentId === studentId &&
+                l.date.startsWith(prevYearMonth) &&
+                (l.status === 'cancelled_credited' || l.status === 'teacher_cancelled')
+            );
+
+            const creditedCount = prevMonthCreditedLessons.length;
+            const creditDeduction = creditedCount * student.rate;
+
+            const finalTotal = Math.max(0, baseTuition - creditDeduction);
+
+            // Check existing payment status if invoice was recorded
+            const existingInv = invoices.find(inv => inv.studentId === studentId && inv.month === yearMonth);
+            const isPaid = existingInv ? existingInv.status === 'paid' : false;
+
+            // Save or Update Invoice record
+            if (existingInv) {
+                existingInv.amount = finalTotal;
+            } else {
+                invoices.push({
+                    id: `inv_${studentId}_${yearMonth}`,
+                    studentId,
+                    month: yearMonth,
+                    status: 'unpaid',
+                    amount: finalTotal,
+                    generatedAt: new Date().toISOString()
+                });
+            }
+            saveStateToLocalStorage();
+
+            // Render Output Breakdown Card
+            const container = document.getElementById('invoice-result-container');
+            container.classList.remove('hidden');
+
+            const dateFormatter = (dStr) => {
+                const [y, m, d] = dStr.split('-');
+                const dt = new Date(y, m - 1, d);
+                return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            };
+
+            // Timetable HTML
+            let timetableHTML = upcomingLessons.map(l => `
+                <div class="flex justify-between items-center py-1.5 border-b border-sand-100 text-xs">
+                    <span class="font-medium text-sand-800">${dateFormatter(l.date)} @ ${l.time}</span>
+                    <span class="font-bold text-sand-900">${l.status === 'makeup' ? 'Make-up ($0)' : `$${student.rate}`}</span>
+                </div>
+            `).join('');
+
+            // Format Plaintext Message for WhatsApp Copying
+            const monthLabel = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            let whatsappMessage = `*Tuition Fee Statement - ${monthLabel}*\n`;
+            whatsappMessage += `Student: *${student.name}*\n\n`;
+            whatsappMessage += `*Scheduled Timetable:*\n`;
+            upcomingLessons.forEach(l => {
+                whatsappMessage += `• ${dateFormatter(l.date)} @ ${l.time} (${l.status === 'makeup' ? 'Make-up' : '$' + student.rate})\n`;
+            });
+            whatsappMessage += `\n*Fee Calculation:*\n`;
+            whatsappMessage += `• Base Tuition (${baseClassCount} classes): $${baseTuition}\n`;
+            if (creditedCount > 0) {
+                whatsappMessage += `• Less: Prev Month Absences (${creditedCount} credited): -$${creditDeduction}\n`;
+            }
+            whatsappMessage += `\n*Total Payable: $${finalTotal}*\n`;
+            if (student.notes) whatsappMessage += `\nNote: ${student.notes}`;
+
+            container.innerHTML = `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-sand-100 pb-3">
+                        <div>
+                            <span class="text-xs text-sand-400 font-semibold uppercase">Monthly Statement</span>
+                            <h3 class="text-base font-bold text-sand-900">${student.name} (${monthLabel})</h3>
+                        </div>
+                        <button onclick="togglePaymentStatus('${studentId}', '${yearMonth}')" class="px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1 ${isPaid ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                            <i data-lucide="${isPaid ? 'check-circle' : 'clock'}" class="w-3.5 h-3.5"></i>
+                            ${isPaid ? 'PAID' : 'MARK PAID'}
+                        </button>
+                    </div>
+
+                    <!-- Timetable View -->
+                    <div>
+                        <h4 class="text-xs font-bold text-sand-700 uppercase tracking-wider mb-2">Upcoming Timetable</h4>
+                        <div class="bg-sand-50 p-3 rounded-xl border border-sand-200 space-y-1">
+                            ${timetableHTML || '<p class="text-xs text-sand-500">No scheduled lessons found for this month.</p>'}
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="space-y-1.5 text-xs bg-sand-100/50 p-3 rounded-xl border border-sand-200">
+                        <div class="flex justify-between text-sand-600">
+                            <span>Base Scheduled Classes (${baseClassCount}):</span>
+                            <span class="font-bold text-sand-900">$${baseTuition}</span>
+                        </div>
+                        ${creditedCount > 0 ? `
+                        <div class="flex justify-between text-emerald-700">
+                            <span>Prev Month Credited Deductions (${creditedCount}):</span>
+                            <span class="font-bold">-$${creditDeduction}</span>
+                        </div>
+                        ` : ''}
+                        <div class="flex justify-between text-sm font-black text-sand-900 pt-2 border-t border-sand-200">
+                            <span>Total Due (1st of Month):</span>
+                            <span class="text-sage-700">$${finalTotal}</span>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Copy Button -->
+                    <button onclick="copyToClipboard(\`${whatsappMessage.replace(/`/g, '\\`')}\`)" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-2 active:scale-98">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                        Copy Statement to WhatsApp
+                    </button>
+                </div>
+            `;
+
+            lucide.createIcons();
+            showToast('Statement & timetable generated');
+        }
+
+        function togglePaymentStatus(studentId, month) {
+            const inv = invoices.find(i => i.studentId === studentId && i.month === month);
+            if (inv) {
+                inv.status = inv.status === 'paid' ? 'unpaid' : 'paid';
+                saveStateToLocalStorage();
+                generateInvoice(); // Refresh view
+                showToast(`Invoice marked as ${inv.status.toUpperCase()}`);
+            }
+        }
+
+        // RENDER: FINANCIAL DASHBOARD
+        function renderFinanceTab() {
+            const yearMonth = document.getElementById('finance-month-picker').value;
+            if (!yearMonth) return;
+
+            // 1. Actual Earned Income (Only completed classes + late cancelled charged classes)
+            let actualEarned = 0;
+            let lessonsTaughtCount = 0;
+
+            lessons.forEach(l => {
+                if (l.date.startsWith(yearMonth)) {
+                    const student = students.find(s => s.id === l.studentId);
+                    const rate = student ? student.rate : 0;
+
+                    if (l.status === 'completed') {
+                        actualEarned += rate;
+                        lessonsTaughtCount++;
+                    } else if (l.status === 'cancelled_charged') {
+                        actualEarned += rate; // Late cancel charged
+                    }
+                }
+            });
+
+            // 2. Total Billed Revenue & Collection Status for Month
+            let totalBilled = 0;
+            let collectedAmount = 0;
+            let outstandingAmount = 0;
+
+            const monthInvoices = invoices.filter(inv => inv.month === yearMonth);
+            monthInvoices.forEach(inv => {
+                totalBilled += inv.amount;
+                if (inv.status === 'paid') {
+                    collectedAmount += inv.amount;
+                } else {
+                    outstandingAmount += inv.amount;
+                }
+            });
+
+            document.getElementById('finance-actual-earned').innerText = `$${actualEarned}`;
+            document.getElementById('finance-total-billed').innerText = `$${totalBilled}`;
+            document.getElementById('finance-lessons-count').innerText = `${lessonsTaughtCount} sessions`;
+
+            document.getElementById('finance-collected-amount').innerText = `$${collectedAmount}`;
+            document.getElementById('finance-outstanding-amount').innerText = `$${outstandingAmount}`;
+
+            const collectedPct = totalBilled > 0 ? (collectedAmount / totalBilled) * 100 : 0;
+            const outstandingPct = totalBilled > 0 ? (outstandingAmount / totalBilled) * 100 : 0;
+
+            document.getElementById('finance-collected-bar').style.width = `${collectedPct}%`;
+            document.getElementById('finance-outstanding-bar').style.width = `${outstandingPct}%`;
+        }
+
+        // COPY TO CLIPBOARD UTILITY
+        function copyToClipboard(text) {
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+
+            showToast('Statement copied! Ready to paste into WhatsApp');
+        }
+
+        // MODAL HELPERS
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // TOAST NOTIFICATION
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
