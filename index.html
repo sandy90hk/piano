@@ -138,11 +138,11 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-medium text-sand-500 mb-1">Select Month</label>
-                        <input type="month" id="invoice-month-picker" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-semibold text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
+                        <input type="month" id="invoice-month-picker" onchange="generateInvoice()" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-semibold text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-sand-500 mb-1">Select Student</label>
-                        <select id="invoice-student-picker" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-semibold text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500"></select>
+                        <select id="invoice-student-picker" onchange="generateInvoice()" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-semibold text-sand-900 focus:outline-none focus:ring-2 focus:ring-sage-500"></select>
                     </div>
                 </div>
                 <button onclick="generateInvoice()" class="w-full py-2.5 bg-sage-600 hover:bg-sage-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
@@ -431,7 +431,10 @@
 
             if (tabName === 'schedule') renderScheduleTab();
             if (tabName === 'students') renderStudentsTab();
-            if (tabName === 'invoices') populateStudentPickers();
+            if (tabName === 'invoices') {
+                populateStudentPickers();
+                generateInvoice();
+            }
             if (tabName === 'finance') renderFinanceTab();
         }
 
@@ -551,7 +554,6 @@
             document.getElementById('modal-reschedule').classList.remove('hidden');
         }
 
-        // CLEAN RESCHEDULING: Updates date/time directly on existing lesson
         function saveReschedule(e) {
             e.preventDefault();
             const id = document.getElementById('reschedule-lesson-id').value;
@@ -667,7 +669,9 @@
             ];
 
             if (pickers[0]) {
+                const currentVal = pickers[0].value;
                 pickers[0].innerHTML = students.map(s => `<option value="${s.id}">${s.name} ($${s.rate})</option>`).join('');
+                if (students.some(s => s.id === currentVal)) pickers[0].value = currentVal;
             }
             if (pickers[1]) {
                 pickers[1].innerHTML = students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
@@ -684,9 +688,17 @@
             const yearMonth = document.getElementById('invoice-month-picker').value;
             const studentId = document.getElementById('invoice-student-picker').value;
 
-            if (!yearMonth || !studentId) return;
+            const container = document.getElementById('invoice-result-container');
+
+            if (!yearMonth || !studentId) {
+                container.classList.add('hidden');
+                return;
+            }
             const student = students.find(s => s.id === studentId);
-            if (!student) return;
+            if (!student) {
+                container.classList.add('hidden');
+                return;
+            }
 
             // RULE 1: Upcoming Same-Month Cancellations are NOT counted
             const currentMonthLessons = lessons.filter(l => 
@@ -719,6 +731,9 @@
             if (!existingInv) {
                 invoices.push({ id: `inv_${studentId}_${yearMonth}`, studentId, month: yearMonth, billed: false, amount: totalPayable });
                 saveStateToLocalStorage();
+            } else {
+                existingInv.amount = totalPayable;
+                saveStateToLocalStorage();
             }
 
             const monthLabel = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -739,7 +754,6 @@
 
             whatsappText += `\n*Total Payable:* $${totalPayable}\nThank you!`;
 
-            const container = document.getElementById('invoice-result-container');
             container.classList.remove('hidden');
 
             container.innerHTML = `
@@ -780,13 +794,15 @@
 
         // TOGGLE BILLED STATUS: Counts toward monthly billed revenue
         function toggleBilled(studentId, month) {
-            const inv = invoices.find(i => i.studentId === studentId && i.month === month);
+            let inv = invoices.find(i => i.studentId === studentId && i.month === month);
             if (inv) {
                 inv.billed = !inv.billed;
-                saveStateToLocalStorage();
-                generateInvoice();
-                showToast(inv.billed ? 'Invoice marked as BILLED' : 'Invoice unbilled');
+            } else {
+                invoices.push({ id: `inv_${studentId}_${month}`, studentId, month: month, billed: true, amount: 0 });
             }
+            saveStateToLocalStorage();
+            generateInvoice();
+            showToast(inv && inv.billed ? 'Invoice marked as BILLED' : 'Invoice unbilled');
         }
 
         function renderFinanceTab() {
