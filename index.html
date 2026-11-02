@@ -375,23 +375,29 @@
 
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateObj = new Date(year, month, d);
-                    if (dateObj.getDay() === parseInt(student.day)) {
-                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                        const slotKey = getSlotKey(student.id, dateObj);
+                    if (dateObj.getDay() !== parseInt(student.day)) continue;
 
-                        const exists = lessons.some(l => l.slotKey === slotKey || (l.studentId === student.id && l.date === dateStr));
-                        
-                        if (!exists) {
-                            lessons.push({
-                                id: 'reg_' + student.id + '_' + dateStr,
-                                studentId: student.id,
-                                slotKey: slotKey,
-                                date: dateStr,
-                                time: student.time,
-                                status: 'scheduled',
-                                isRegular: true
-                            });
-                        }
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const slotKey = getSlotKey(student.id, dateObj);
+
+                    const exists = lessons.some(l =>
+                        l.slotKey === slotKey ||
+                        (l.studentId === student.id && (
+                            l.date === dateStr ||
+                            (l.isRegular && l.originalDate === dateStr)
+                        ))
+                    );
+
+                    if (!exists) {
+                        lessons.push({
+                            id: 'reg_' + student.id + '_' + dateStr,
+                            studentId: student.id,
+                            slotKey,
+                            date: dateStr,
+                            time: student.time,
+                            status: 'scheduled',
+                            isRegular: true
+                        });
                     }
                 }
             });
@@ -550,16 +556,53 @@
             const newTime = document.getElementById('reschedule-time').value;
 
             const lesson = lessons.find(l => l.id === id);
-            if (lesson) {
-                if (!lesson.originalDate) lesson.originalDate = lesson.date;
-                lesson.date = newDate;
-                lesson.time = newTime;
-                lesson.status = 'rescheduled';
-                saveStateToLocalStorage();
-                renderScheduleTab();
+            if (!lesson || !newDate || !newTime) return;
+
+            if (lesson.date === newDate && lesson.time === newTime) {
                 closeModal('modal-reschedule');
-                showToast('Lesson rescheduled cleanly');
+                return;
             }
+
+            if (!lesson.originalDate) lesson.originalDate = lesson.date;
+            if (lesson.isRegular && !lesson.slotKey) {
+                const [y, m, d] = lesson.originalDate.split('-').map(Number);
+                lesson.slotKey = getSlotKey(lesson.studentId, new Date(y, m - 1, d));
+            }
+
+            lesson.date = newDate;
+            lesson.time = newTime;
+            lesson.status = 'rescheduled';
+
+            const student = students.find(s => s.id === lesson.studentId);
+            if (student) {
+                invoices.filter(i => i.studentId === student.id).forEach(inv => {
+                    const [y, m] = inv.month.split('-').map(Number);
+                    let prevY = y;
+                    let prevM = m - 1;
+                    if (prevM < 1) {
+                        prevM = 12;
+                        prevY -= 1;
+                    }
+                    const prevYM = `${prevY}-${String(prevM).padStart(2, '0')}`;
+
+                    const chargeable = lessons.filter(l =>
+                        l.studentId === student.id && l.date.startsWith(inv.month) &&
+                        l.status !== 'cancelled_credited' && l.status !== 'teacher_cancelled'
+                    ).length;
+
+                    const credits = lessons.filter(l =>
+                        l.studentId === student.id && l.date.startsWith(prevYM) &&
+                        (l.status === 'cancelled_credited' || l.status === 'teacher_cancelled')
+                    ).length;
+
+                    inv.amount = Math.max(0, (chargeable - credits) * student.rate);
+                });
+            }
+
+            saveStateToLocalStorage();
+            renderScheduleTab();
+            closeModal('modal-reschedule');
+            showToast('Lesson rescheduled cleanly');
         }
 
         function renderStudentsTab() {
@@ -709,7 +752,6 @@
             const [y, m] = yearMonth.split('-').map(Number);
             const targetDateObj = new Date(y, m - 1, 1);
             
-            // Calculate previous year-month string safely
             let prevY = y;
             let prevM = m - 1;
             if (prevM < 1) {
@@ -718,7 +760,6 @@
             }
             const prevYearMonth = `${prevY}-${String(prevM).padStart(2, '0')}`;
 
-            // Previous Month Credited Absences Search
             const prevMonthCredits = lessons.filter(l => 
                 l.studentId === studentId &&
                 l.date.startsWith(prevYearMonth) &&
