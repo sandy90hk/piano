@@ -353,9 +353,9 @@
             if (i) invoices = JSON.parse(i);
         }
 
-        // Helper to get week key for slot tracking
+        // Slot Key Generator using Local Date String to prevent UTC Offset Errors
         function getSlotKey(studentId, dateObj) {
-            const tempDate = new Date(dateObj.getTime());
+            const tempDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
             tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
             const yearStart = new Date(tempDate.getFullYear(), 0, 1);
             const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
@@ -379,7 +379,6 @@
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                         const slotKey = getSlotKey(student.id, dateObj);
 
-                        // Check if a lesson with this weekly slotKey already exists (whether on original or rescheduled date)
                         const exists = lessons.some(l => l.slotKey === slotKey || (l.studentId === student.id && l.date === dateStr));
                         
                         if (!exists) {
@@ -455,7 +454,8 @@
 
             monthLessons.forEach(lesson => {
                 const student = students.find(s => s.id === lesson.studentId) || { name: 'Student', rate: 0 };
-                const dateObj = new Date(lesson.date + 'T' + lesson.time);
+                const parts = lesson.date.split('-');
+                const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
                 const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
@@ -706,10 +706,19 @@
 
             const baseTuition = currentMonthLessons.length * student.rate;
 
-            const targetDateObj = new Date(yearMonth + '-01');
-            const prevMonthDate = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth() - 1, 1);
-            const prevYearMonth = prevMonthDate.toISOString().slice(0, 7);
+            const [y, m] = yearMonth.split('-').map(Number);
+            const targetDateObj = new Date(y, m - 1, 1);
+            
+            // Calculate previous year-month string safely
+            let prevY = y;
+            let prevM = m - 1;
+            if (prevM < 1) {
+                prevM = 12;
+                prevY -= 1;
+            }
+            const prevYearMonth = `${prevY}-${String(prevM).padStart(2, '0')}`;
 
+            // Previous Month Credited Absences Search
             const prevMonthCredits = lessons.filter(l => 
                 l.studentId === studentId &&
                 l.date.startsWith(prevYearMonth) &&
@@ -751,7 +760,7 @@
             container.classList.remove('hidden');
 
             const deductionsHTML = prevMonthCredits.map(l => `
-                <div class="flex justify-between text-emerald-700 text-xs">
+                <div class="flex justify-between text-emerald-700 text-xs font-semibold">
                     <span>• Deduction: ${l.date} (${l.status === 'teacher_cancelled' ? 'Teacher Cancel' : '>24h Cancel'}):</span>
                     <span class="font-bold">-$${student.rate}</span>
                 </div>
