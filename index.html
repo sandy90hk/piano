@@ -321,7 +321,7 @@
         let students = [];
         let lessons = [];
         let invoices = [];
-        let currentScheduleMonth = new Date(2026, 9, 1); // Defaults to October 2026
+        let currentScheduleMonth = new Date(2026, 9, 1);
 
         window.onload = function() {
             lucide.createIcons();
@@ -353,6 +353,15 @@
             if (i) invoices = JSON.parse(i);
         }
 
+        // Helper to get week key for slot tracking
+        function getSlotKey(studentId, dateObj) {
+            const tempDate = new Date(dateObj.getTime());
+            tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+            const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+            const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+            return `${studentId}_${tempDate.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+        }
+
         function ensureRegularLessonsGenerated() {
             if (students.length === 0) return;
             const year = currentScheduleMonth.getFullYear();
@@ -362,17 +371,22 @@
 
             students.forEach(student => {
                 const startYM = student.startMonth || '2026-10';
-                if (yearMonthStr < startYM) return; // Skip if prior to student joining month
+                if (yearMonthStr < startYM) return;
 
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateObj = new Date(year, month, d);
                     if (dateObj.getDay() === parseInt(student.day)) {
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                        const exists = lessons.some(l => l.studentId === student.id && l.date === dateStr);
+                        const slotKey = getSlotKey(student.id, dateObj);
+
+                        // Check if a lesson with this weekly slotKey already exists (whether on original or rescheduled date)
+                        const exists = lessons.some(l => l.slotKey === slotKey || (l.studentId === student.id && l.date === dateStr));
+                        
                         if (!exists) {
                             lessons.push({
                                 id: 'reg_' + student.id + '_' + dateStr,
                                 studentId: student.id,
+                                slotKey: slotKey,
                                 date: dateStr,
                                 time: student.time,
                                 status: 'scheduled',
@@ -455,14 +469,14 @@
                 } else if (lesson.status === 'cancelled_credited') {
                     badgeClass = "bg-amber-100 text-amber-800 border-amber-300";
                     badgeLabel = "Cancelled (>24h Credited)";
-                    cardBg = "bg-sand-200/60 opacity-80"; // Darkened card for credited cancels
+                    cardBg = "bg-sand-200/60 opacity-80";
                 } else if (lesson.status === 'cancelled_charged') {
                     badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
-                    badgeLabel = "Cancelled (<24h Charged)"; // Kept clear & un-dimmed
+                    badgeLabel = "Cancelled (<24h Charged)";
                 } else if (lesson.status === 'teacher_cancelled') {
                     badgeClass = "bg-purple-100 text-purple-800 border-purple-300";
                     badgeLabel = "Teacher Cancelled";
-                    cardBg = "bg-sand-200/60 opacity-80"; // Darkened card for teacher cancels
+                    cardBg = "bg-sand-200/60 opacity-80";
                 } else if (lesson.status === 'rescheduled') {
                     badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
                     badgeLabel = "Rescheduled";
@@ -683,7 +697,6 @@
                 return;
             }
 
-            // RULE 1: Exclude cancelled classes in the current billing month
             const currentMonthLessons = lessons.filter(l => 
                 l.studentId === studentId && 
                 l.date.startsWith(yearMonth) &&
@@ -693,7 +706,6 @@
 
             const baseTuition = currentMonthLessons.length * student.rate;
 
-            // RULE 2: Previous Month Credited Absences explicitly named & deducted
             const targetDateObj = new Date(yearMonth + '-01');
             const prevMonthDate = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth() - 1, 1);
             const prevYearMonth = prevMonthDate.toISOString().slice(0, 7);
@@ -720,7 +732,6 @@
 
             const monthLabel = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-            // WhatsApp Summary Text
             let whatsappText = `*Tuition Statement for ${student.name} (${monthLabel})*\n\n`;
             whatsappText += `*Scheduled Timetable (${currentMonthLessons.length} classes):*\n`;
             currentMonthLessons.forEach(l => {
