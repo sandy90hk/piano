@@ -26,11 +26,6 @@
                             500: '#739072',
                             600: '#4f6f52',
                             700: '#3a533b',
-                        },
-                        terracotta: {
-                            100: '#fbece8',
-                            500: '#d97757',
-                            600: '#c05638',
                         }
                     },
                     fontFamily: {
@@ -60,7 +55,7 @@
         }
     </style>
 </head>
-<body class="bg-sand-100 text-sand-900 pb-24 md:pb-6 min-h-screen">
+<body class="bg-sand-100 text-sand-900 pb-24 md:pb-6 min-h-screen select-none">
 
     <!-- TOP HEADER -->
     <header class="sticky top-0 z-30 bg-sand-50/90 backdrop-blur-md border-b border-sand-200 px-4 py-3 flex items-center justify-between">
@@ -73,16 +68,10 @@
                 <p class="text-xs text-sand-500 font-medium mt-0.5">Tuition & Schedule Manager</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
-            <button onclick="loadSampleData()" title="Load Sample Data" class="px-2.5 py-1.5 bg-sand-200 hover:bg-sand-300 text-sand-800 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1">
-                <i data-lucide="database" class="w-3.5 h-3.5"></i>
-                <span class="hidden sm:inline">Demo Data</span>
-            </button>
-            <button onclick="openStudentModal()" class="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-95">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Student</span>
-            </button>
-        </div>
+        <button onclick="openStudentModal()" class="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-95">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Student</span>
+        </button>
     </header>
 
     <!-- MAIN CONTAINER -->
@@ -103,7 +92,7 @@
             <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-sand-200 flex items-center justify-between">
                 <button onclick="changeScheduleMonth(-1)" class="p-2 hover:bg-sand-100 rounded-xl transition"><i data-lucide="chevron-left" class="w-5 h-5 text-sand-800"></i></button>
                 <div class="text-center">
-                    <span id="current-schedule-month-label" class="text-base font-bold text-sand-900 block">March 2026</span>
+                    <span id="current-schedule-month-label" class="text-base font-bold text-sand-900 block">October 2026</span>
                     <span id="current-schedule-count" class="text-xs text-sand-500 font-medium">0 classes scheduled</span>
                 </div>
                 <button onclick="changeScheduleMonth(1)" class="p-2 hover:bg-sand-100 rounded-xl transition"><i data-lucide="chevron-right" class="w-5 h-5 text-sand-800"></i></button>
@@ -251,6 +240,10 @@
                     </div>
                 </div>
                 <div>
+                    <label class="block font-semibold text-sand-700 mb-1">Start Month</label>
+                    <input type="month" id="student-start-month" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none">
+                </div>
+                <div>
                     <label class="block font-semibold text-sand-700 mb-1">Contact / Notes</label>
                     <input type="text" id="student-notes" placeholder="e.g. Parent WhatsApp +852 9123 4567" class="w-full bg-sand-50 border border-sand-200 rounded-xl px-3 py-2 text-xs font-medium text-sand-900 focus:outline-none">
                 </div>
@@ -328,16 +321,16 @@
         let students = [];
         let lessons = [];
         let invoices = [];
-        let currentScheduleMonth = new Date();
+        let currentScheduleMonth = new Date(2026, 9, 1); // Defaults to October 2026
 
         window.onload = function() {
             lucide.createIcons();
             loadStateFromLocalStorage();
             
-            const today = new Date();
-            const ym = today.toISOString().slice(0, 7);
+            const ym = '2026-11';
             document.getElementById('invoice-month-picker').value = ym;
             document.getElementById('finance-month-picker').value = ym;
+            document.getElementById('student-start-month').value = '2026-10';
 
             ensureRegularLessonsGenerated();
             renderScheduleTab();
@@ -360,41 +353,17 @@
             if (i) invoices = JSON.parse(i);
         }
 
-        function loadSampleData() {
-            const today = new Date();
-            const curY = today.getFullYear();
-            const curM = today.getMonth();
-
-            students = [
-                { id: 's1', name: 'Sophia Chen', rate: 500, day: 1, time: '16:00', notes: 'WhatsApp: +852 9876 5432' },
-                { id: 's2', name: 'Ethan Wong', rate: 600, day: 3, time: '17:30', notes: 'Grade 8 Piano' },
-                { id: 's3', name: 'Chloe Ho', rate: 450, day: 5, time: '15:00', notes: 'Primary Math' }
-            ];
-
-            const formatDate = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
-            lessons = [
-                { id: 'l1', studentId: 's1', date: formatDate(curY, curM, 2), time: '16:00', status: 'completed', isRegular: true },
-                { id: 'l2', studentId: 's1', date: formatDate(curY, curM, 9), time: '16:00', status: 'cancelled_credited', isRegular: true },
-                { id: 'l3', studentId: 's1', date: formatDate(curY, curM, 16), time: '16:00', status: 'completed', isRegular: true },
-                { id: 'l4', studentId: 's1', date: formatDate(curY, curM, 23), time: '16:00', status: 'scheduled', isRegular: true }
-            ];
-
-            saveStateToLocalStorage();
-            ensureRegularLessonsGenerated();
-            renderScheduleTab();
-            renderStudentsTab();
-            populateStudentPickers();
-            showToast('Sample Demo Data Loaded');
-        }
-
         function ensureRegularLessonsGenerated() {
             if (students.length === 0) return;
             const year = currentScheduleMonth.getFullYear();
             const month = currentScheduleMonth.getMonth();
+            const yearMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
             students.forEach(student => {
+                const startYM = student.startMonth || '2026-10';
+                if (yearMonthStr < startYM) return; // Skip if prior to student joining month
+
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateObj = new Date(year, month, d);
                     if (dateObj.getDay() === parseInt(student.day)) {
@@ -466,43 +435,49 @@
             container.innerHTML = '';
 
             if (monthLessons.length === 0) {
-                container.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center border border-sand-200 text-xs text-sand-500">No lessons found.</div>`;
+                container.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center border border-sand-200 text-xs text-sand-500">No lessons scheduled for this month.</div>`;
                 return;
             }
 
             monthLessons.forEach(lesson => {
-                const student = students.find(s => s.id === lesson.studentId) || { name: 'Unknown', rate: 0 };
+                const student = students.find(s => s.id === lesson.studentId) || { name: 'Student', rate: 0 };
                 const dateObj = new Date(lesson.date + 'T' + lesson.time);
                 const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
                 let badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
                 let badgeLabel = "Scheduled";
+                let cardBg = "bg-white";
 
                 if (lesson.status === 'completed') {
                     badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
                     badgeLabel = "Completed";
                 } else if (lesson.status === 'cancelled_credited') {
-                    badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                    badgeClass = "bg-amber-100 text-amber-800 border-amber-300";
                     badgeLabel = "Cancelled (>24h Credited)";
+                    cardBg = "bg-sand-200/60 opacity-80"; // Darkened card for credited cancels
                 } else if (lesson.status === 'cancelled_charged') {
                     badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
-                    badgeLabel = "Cancelled (<24h Charged)";
+                    badgeLabel = "Cancelled (<24h Charged)"; // Kept clear & un-dimmed
                 } else if (lesson.status === 'teacher_cancelled') {
-                    badgeClass = "bg-purple-50 text-purple-700 border-purple-200";
+                    badgeClass = "bg-purple-100 text-purple-800 border-purple-300";
                     badgeLabel = "Teacher Cancelled";
+                    cardBg = "bg-sand-200/60 opacity-80"; // Darkened card for teacher cancels
                 } else if (lesson.status === 'rescheduled') {
                     badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-200";
                     badgeLabel = "Rescheduled";
                 }
 
+                const rescheduleTag = lesson.originalDate ? `<span class="text-[10px] text-indigo-600 block mt-0.5 font-semibold">(Rescheduled from ${lesson.originalDate})</span>` : '';
+
                 const card = document.createElement('div');
-                card.className = "bg-white p-3.5 rounded-2xl shadow-2xs border border-sand-200 space-y-3";
+                card.className = `${cardBg} p-3.5 rounded-2xl shadow-2xs border border-sand-200 space-y-3 transition-colors`;
                 card.innerHTML = `
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 class="text-sm font-bold text-sand-900">${student.name}</h3>
                             <p class="text-xs font-semibold text-sand-500 mt-0.5">${dayName}, ${formattedDate} @ ${lesson.time} • $${student.rate}</p>
+                            ${rescheduleTag}
                         </div>
                         <div class="flex items-center gap-1.5">
                             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">${badgeLabel}</span>
@@ -510,12 +485,12 @@
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-sand-100 flex items-center gap-1 overflow-x-auto no-scrollbar text-[10px] font-bold">
+                    <div class="pt-2 border-t border-sand-200/60 flex items-center gap-1 overflow-x-auto no-scrollbar text-[10px] font-bold">
                         <button onclick="updateLessonStatus('${lesson.id}', 'completed')" class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg">Taught</button>
                         <button onclick="openRescheduleModal('${lesson.id}')" class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg">Reschedule</button>
-                        <button onclick="updateLessonStatus('${lesson.id}', 'cancelled_credited')" class="px-2 py-1 bg-amber-50 text-amber-700 rounded-lg">>24h Cancel</button>
+                        <button onclick="updateLessonStatus('${lesson.id}', 'cancelled_credited')" class="px-2 py-1 bg-amber-50 text-amber-800 rounded-lg">>24h Cancel</button>
                         <button onclick="updateLessonStatus('${lesson.id}', 'cancelled_charged')" class="px-2 py-1 bg-rose-50 text-rose-700 rounded-lg"><24h Cancel</button>
-                        <button onclick="updateLessonStatus('${lesson.id}', 'teacher_cancelled')" class="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg">Teacher Cancel</button>
+                        <button onclick="updateLessonStatus('${lesson.id}', 'teacher_cancelled')" class="px-2 py-1 bg-purple-50 text-purple-800 rounded-lg">Teacher Cancel</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -548,7 +523,7 @@
             if (!lesson) return;
             const student = students.find(s => s.id === lesson.studentId);
             document.getElementById('reschedule-lesson-id').value = lesson.id;
-            document.getElementById('reschedule-lesson-info').innerText = `${student ? student.name : 'Student'} - ${lesson.date} @ ${lesson.time}`;
+            document.getElementById('reschedule-lesson-info').innerText = `${student ? student.name : 'Student'} - Current: ${lesson.date} @ ${lesson.time}`;
             document.getElementById('reschedule-date').value = lesson.date;
             document.getElementById('reschedule-time').value = lesson.time;
             document.getElementById('modal-reschedule').classList.remove('hidden');
@@ -562,13 +537,14 @@
 
             const lesson = lessons.find(l => l.id === id);
             if (lesson) {
+                if (!lesson.originalDate) lesson.originalDate = lesson.date;
                 lesson.date = newDate;
                 lesson.time = newTime;
                 lesson.status = 'rescheduled';
                 saveStateToLocalStorage();
                 renderScheduleTab();
                 closeModal('modal-reschedule');
-                showToast('Lesson rescheduled');
+                showToast('Lesson rescheduled cleanly');
             }
         }
 
@@ -577,13 +553,18 @@
             document.getElementById('student-count-badge').innerText = `${students.length} Students`;
             container.innerHTML = '';
 
+            if (students.length === 0) {
+                container.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center border border-sand-200 text-xs text-sand-500">No active students. Click "+ Student" to add one.</div>`;
+                return;
+            }
+
             students.forEach(student => {
                 const card = document.createElement('div');
                 card.className = "bg-white p-4 rounded-2xl shadow-2xs border border-sand-200 flex justify-between items-center";
                 card.innerHTML = `
                     <div>
                         <h3 class="text-sm font-bold text-sand-900">${student.name}</h3>
-                        <p class="text-xs text-sand-500 mt-0.5">$${student.rate} / class • ${student.notes || 'No notes'}</p>
+                        <p class="text-xs text-sand-500 mt-0.5">$${student.rate} / class • Started ${student.startMonth || '2026-10'}</p>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="editStudent('${student.id}')" class="p-2 text-sage-600"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
@@ -598,6 +579,7 @@
         function openStudentModal(id = null) {
             document.getElementById('student-form').reset();
             document.getElementById('student-id').value = '';
+            document.getElementById('student-start-month').value = '2026-10';
             if (id) {
                 const s = students.find(x => x.id === id);
                 if (s) {
@@ -606,6 +588,7 @@
                     document.getElementById('student-rate').value = s.rate;
                     document.getElementById('student-day').value = s.day;
                     document.getElementById('student-time').value = s.time;
+                    document.getElementById('student-start-month').value = s.startMonth || '2026-10';
                     document.getElementById('student-notes').value = s.notes || '';
                 }
             }
@@ -619,27 +602,29 @@
             const rate = parseFloat(document.getElementById('student-rate').value);
             const day = parseInt(document.getElementById('student-day').value);
             const time = document.getElementById('student-time').value;
+            const startMonth = document.getElementById('student-start-month').value || '2026-10';
             const notes = document.getElementById('student-notes').value.trim();
 
             const idx = students.findIndex(s => s.id === id);
-            if (idx >= 0) students[idx] = { id, name, rate, day, time, notes };
-            else students.push({ id, name, rate, day, time, notes });
+            if (idx >= 0) students[idx] = { id, name, rate, day, time, startMonth, notes };
+            else students.push({ id, name, rate, day, time, startMonth, notes });
 
             saveStateToLocalStorage();
             ensureRegularLessonsGenerated();
             renderStudentsTab();
             populateStudentPickers();
             closeModal('modal-student');
-            showToast('Student saved');
+            showToast('Student details saved');
         }
 
         function editStudent(id) { openStudentModal(id); }
         function deleteStudent(id) {
-            if (confirm("Delete student?")) {
+            if (confirm("Remove student from directory? Historical billing and lesson logs will be preserved.")) {
                 students = students.filter(s => s.id !== id);
                 saveStateToLocalStorage();
                 renderStudentsTab();
                 populateStudentPickers();
+                showToast('Student removed from directory');
             }
         }
 
@@ -683,11 +668,9 @@
             }
         }
 
-        // GENERATE INVOICE ACCORDING TO YOUR EXACT RULES
         function generateInvoice() {
             const yearMonth = document.getElementById('invoice-month-picker').value;
             const studentId = document.getElementById('invoice-student-picker').value;
-
             const container = document.getElementById('invoice-result-container');
 
             if (!yearMonth || !studentId) {
@@ -700,7 +683,7 @@
                 return;
             }
 
-            // RULE 1: Upcoming Same-Month Cancellations are NOT counted
+            // RULE 1: Exclude cancelled classes in the current billing month
             const currentMonthLessons = lessons.filter(l => 
                 l.studentId === studentId && 
                 l.date.startsWith(yearMonth) &&
@@ -710,7 +693,7 @@
 
             const baseTuition = currentMonthLessons.length * student.rate;
 
-            // RULE 2: Previous Month Credited Absences are Deducted
+            // RULE 2: Previous Month Credited Absences explicitly named & deducted
             const targetDateObj = new Date(yearMonth + '-01');
             const prevMonthDate = new Date(targetDateObj.getFullYear(), targetDateObj.getMonth() - 1, 1);
             const prevYearMonth = prevMonthDate.toISOString().slice(0, 7);
@@ -724,7 +707,6 @@
             const creditDeduction = prevMonthCredits.length * student.rate;
             const totalPayable = Math.max(0, baseTuition - creditDeduction);
 
-            // Check if billed already
             const existingInv = invoices.find(i => i.studentId === studentId && i.month === yearMonth);
             const isBilled = existingInv ? existingInv.billed : false;
 
@@ -738,23 +720,31 @@
 
             const monthLabel = targetDateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-            // WhatsApp Plaintext Output
-            let whatsappText = `*Tuition Invoice for ${student.name} (${monthLabel})*\n\n`;
-            whatsappText += `*Upcoming Scheduled Timetable (${currentMonthLessons.length}):*\n`;
+            // WhatsApp Summary Text
+            let whatsappText = `*Tuition Statement for ${student.name} (${monthLabel})*\n\n`;
+            whatsappText += `*Scheduled Timetable (${currentMonthLessons.length} classes):*\n`;
             currentMonthLessons.forEach(l => {
-                whatsappText += `• ${l.date} @ ${l.time} ($${student.rate})\n`;
+                const resch = l.originalDate ? ` (Rescheduled from ${l.originalDate})` : '';
+                whatsappText += `• ${l.date} @ ${l.time}${resch} - $${student.rate}\n`;
             });
 
             if (prevMonthCredits.length > 0) {
-                whatsappText += `\n*Deductions (Credited Absences from Prev. Month):*\n`;
+                whatsappText += `\n*Previous Month Deductions (${prevMonthCredits.length}):*\n`;
                 prevMonthCredits.forEach(l => {
-                    whatsappText += `• ${l.date} (${l.status}) -$${student.rate}\n`;
+                    whatsappText += `• Deduction: ${l.date} (${l.status === 'teacher_cancelled' ? 'Teacher Cancel' : '>24h Notice'}) -$${student.rate}\n`;
                 });
             }
 
-            whatsappText += `\n*Total Payable:* $${totalPayable}\nThank you!`;
+            whatsappText += `\n*Total Tuition Payable:* $${totalPayable}\nThank you!`;
 
             container.classList.remove('hidden');
+
+            const deductionsHTML = prevMonthCredits.map(l => `
+                <div class="flex justify-between text-emerald-700 text-xs">
+                    <span>• Deduction: ${l.date} (${l.status === 'teacher_cancelled' ? 'Teacher Cancel' : '>24h Cancel'}):</span>
+                    <span class="font-bold">-$${student.rate}</span>
+                </div>
+            `).join('');
 
             container.innerHTML = `
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-sand-200 space-y-4">
@@ -767,24 +757,19 @@
                         </button>
                     </div>
 
-                    <div class="space-y-1.5 text-xs bg-sand-50 p-3 rounded-xl border border-sand-200">
-                        <div class="flex justify-between">
-                            <span>Current Month Payable Classes (${currentMonthLessons.length}):</span>
-                            <span class="font-bold">$${baseTuition}</span>
+                    <div class="space-y-2 text-xs bg-sand-50 p-3 rounded-xl border border-sand-200">
+                        <div class="flex justify-between font-medium">
+                            <span>Current Month Classes (${currentMonthLessons.length}):</span>
+                            <span class="font-bold text-sand-900">$${baseTuition}</span>
                         </div>
-                        ${prevMonthCredits.length > 0 ? `
-                        <div class="flex justify-between text-emerald-700">
-                            <span>Prev. Month Credited Deductions (${prevMonthCredits.length}):</span>
-                            <span class="font-bold">-$${creditDeduction}</span>
-                        </div>
-                        ` : ''}
+                        ${deductionsHTML}
                         <div class="flex justify-between text-sm font-black text-sand-900 pt-2 border-t border-sand-200">
-                            <span>Total Net Tuition Due:</span>
+                            <span>Net Tuition Payable:</span>
                             <span class="text-sage-700">$${totalPayable}</span>
                         </div>
                     </div>
 
-                    <button onclick="copyToClipboard(\`${encodeURIComponent(whatsappText)}\`)" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                    <button onclick="copyToClipboard(\`${encodeURIComponent(whatsappText)}\`)" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-xs">
                         <i data-lucide="message-square" class="w-4 h-4"></i> Copy Statement to WhatsApp
                     </button>
                 </div>
@@ -792,7 +777,6 @@
             lucide.createIcons();
         }
 
-        // TOGGLE BILLED STATUS: Counts toward monthly billed revenue
         function toggleBilled(studentId, month) {
             let inv = invoices.find(i => i.studentId === studentId && i.month === month);
             if (inv) {
@@ -802,7 +786,7 @@
             }
             saveStateToLocalStorage();
             generateInvoice();
-            showToast(inv && inv.billed ? 'Invoice marked as BILLED' : 'Invoice unbilled');
+            showToast(inv && inv.billed ? 'Marked as BILLED' : 'Marked as UNBILLED');
         }
 
         function renderFinanceTab() {
@@ -821,7 +805,6 @@
                 }
             });
 
-            // Calculate Billed Revenue from invoices marked as Billed
             let billedRevenue = 0;
             invoices.filter(i => i.month === yearMonth && i.billed).forEach(i => {
                 billedRevenue += i.amount;
